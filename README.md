@@ -26,16 +26,23 @@ Open http://localhost:3000.
 
 ### About the schedule photo scan
 
-Scanning runs fully in the browser with no server call, no API key, and no cost. To get the
-most out of free OCR, each photo is: cleaned up (upscaled, grayscaled, contrast-boosted),
-read twice with different layout assumptions (a plain list vs. a scattered/table layout),
-and merged, with day names matched fuzzily to shrug off small OCR typos.
+Scanning runs fully in the browser with no server call, no API key, and no cost, and handles
+two different photo shapes:
 
-Even so, it reads *text*, not table layout — it works well on a clear, typed schedule list
-("Monday 9:00–10:30 AM Calculus"), and less reliably on a photographed screenshot of a
-calendar app's grid view, where the layout itself carries information OCR can't see. Every
-row it produces is marked "approx" on purpose — always give them a glance — and typing the
-schedule in by hand is always available as a fallback.
+- **A typed/printed list** ("Monday 9:00–10:30 AM Calculus") — read directly and parsed line
+  by line, with day names matched fuzzily so small OCR typos don't break it.
+- **A spreadsheet-style weekly grid** (day columns × time rows, a colored block per class —
+  e.g. a screenshot from Excel/Google Sheets) — OCR alone can't see table structure, so this
+  also samples pixel colors directly on the photo to find where each colored block starts and
+  ends, using the day and time headers it reads to convert that into an actual time range,
+  then attaches whatever label text sits inside the block. The photo is upscaled, grayscaled,
+  and contrast-boosted first to help both approaches.
+
+It tries the grid reading first; if the photo doesn't look like a grid, it falls back to the
+plain-list reading automatically. Either way, every row it produces is marked "approx" on
+purpose: a label can come through as generic "Class" if the text inside a block was too small
+or low-contrast to read, and times can land up to ~30 minutes off. Always give the results a
+glance — and typing the schedule in by hand is always available as a fallback.
 
 ## Deploying to Vercel
 

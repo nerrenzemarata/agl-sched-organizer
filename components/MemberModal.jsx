@@ -5,7 +5,8 @@ import { DAYS } from '@/lib/time';
 import { PALETTE, colorForIndex } from '@/lib/colors';
 import { readAndCompressImage } from '@/lib/storage';
 import { mergeScheduleReadings } from '@/lib/scheduleParser';
-import { preprocessForOCR } from '@/lib/imagePreprocess';
+import { preprocessForOCR, renderColorCanvas } from '@/lib/imagePreprocess';
+import { parseGridSchedule } from '@/lib/gridScheduleParser';
 
 function emptySchedule() {
   const s = {};
@@ -71,18 +72,20 @@ export default function MemberModal({ open, member, members, events, onClose, on
     setScanStage('Enhancing photo…');
     try {
       // Free, on-device analysis — runs entirely in the browser (tesseract.js),
-      // no API key, no server call, no cost. To squeeze more accuracy out of it
-      // for free, we: 1) clean up the photo (upscale, grayscale, boost contrast),
-      // 2) read it twice with different layout assumptions and merge whatever
-      // each pass finds, and 3) tolerate small OCR typos when matching day names.
-      const cleanedPhoto = await preprocessForOCR(photoDataUrl);
+      // no API key, no server call, no cost. Two different photo shapes need two
+      // different strategies:
+      //  - a typed/printed list ("Monday 9-10:30 Calculus") → read the text and
+      //    parse lines directly.
+      //  - a spreadsheet-style weekly grid (day columns × time rows, colored
+      //    class blocks) → OCR alone can't see the table structure, so we also
+      //    sample pixel colors on the photo itself to find where each colored
+      //    block starts/ends, then attach whatever label sits inside it.
+      // We try the grid reading first (it's the harder photo type to get right);
+      // if the photo doesn't look like a grid, we fall back to the list reading.
+      const { dataUrl: cleanedPhoto, width, height } = await preprocessForOCR(photoDataUrl);
+      const colorCtx = await renderColorCanvas(photoDataUrl, width, height);
 
       const { createWorker, PSM } = await import('tesseract.js');
-      const passes = [
-        { mode: PSM.SINGLE_BLOCK, label: 'a clean list layout' },
-        { mode: PSM.SPARSE_TEXT, label: 'a scattered / table layout' },
-      ];
-
       setScanStage('Loading recognition engine…');
       const worker = await createWorker('eng', undefined, {
         logger: (m) => {
@@ -92,25 +95,40 @@ export default function MemberModal({ open, member, members, events, onClose, on
         },
       });
 
-      const texts = [];
+      let found = [];
+      let usedGridReading = false;
       try {
-        for (let i = 0; i < passes.length; i++) {
-          setScanStage(`Analyzing photo — pass ${i + 1} of ${passes.length} (${passes[i].label})…`);
+        setScanStage('Analyzing photo — checking for a weekly grid layout…');
+        setScanProgress(0);
+        await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
+        const gridResult = await worker.recognize(cleanedPhoto, {}, { blocks: true, text: true });
+
+        const gridRows = parseGridSchedule({
+          page: gridResult?.data,
+          colorCtx,
+          imageWidth: width,
+          imageHeight: height,
+        });
+
+        if (gridRows.length >= 3) {
+          found = gridRows;
+          usedGridReading = true;
+        } else {
+          setScanStage('Analyzing photo — reading it as a plain list…');
           setScanProgress(0);
-          await worker.setParameters({ tessedit_pageseg_mode: passes[i].mode });
-          const result = await worker.recognize(cleanedPhoto);
-          texts.push(result?.data?.text || '');
+          await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+          const listResult = await worker.recognize(cleanedPhoto);
+          found = mergeScheduleReadings([gridResult?.data?.text || '', listResult?.data?.text || '']);
         }
       } finally {
         await worker.terminate();
       }
 
       setScanStage('Matching days & times…');
-      const found = mergeScheduleReadings(texts);
 
       if (found.length === 0) {
         setScanNotice(
-          'Ran two enhanced reading passes but couldn’t confidently match any classes to specific times. This works best on a clear, typed schedule list — a photographed calendar-app grid is much harder. Try cropping tightly to just the schedule, reducing glare, or add classes manually below.'
+          'Analyzed the photo but couldn’t confidently match any classes to specific times. Try cropping tightly to just the schedule, reducing glare, or straightening the photo — or add classes manually below.'
         );
         return;
       }
@@ -125,7 +143,7 @@ export default function MemberModal({ open, member, members, events, onClose, on
         return next;
       });
       setScanNotice(
-        `Analyzed the photo across 2 passes and found ${found.length} class${found.length === 1 ? '' : 'es'} — please double-check each one below, times and labels can still come out wrong.`
+        `${usedGridReading ? 'Detected a weekly grid layout and read the colored blocks' : 'Analyzed the photo'} — found ${found.length} class${found.length === 1 ? '' : 'es'}. Please double-check each one below, times and labels can still come out wrong.`
       );
     } catch {
       setScanError('Could not read that photo. Try again, or add classes manually below.');
@@ -244,9 +262,12 @@ export default function MemberModal({ open, member, members, events, onClose, on
             <label>Schedule photo</label>
             <p className="field-hint">
               Upload a photo of their schedule and it's scanned for free, on-device (no account, no upload to
-              any server) to try to fill in the classes below. Works best on a clear, typed schedule list —
-              screenshots of calendar-app grids are much harder to read automatically, so double-check the
-              results either way. No photo, or scanning comes up empty? Just add classes manually further down.
+              any server) to try to fill in the classes below. Handles both a typed schedule list and a
+              spreadsheet-style weekly grid (colored blocks per class) — for the grid style it reads the day
+              and time headers and figures out each class's time range from where its colored block starts and
+              ends. Either way, double-check the results — a label can come through blank ("Class") if the text
+              was hard to read; times can be off by up to ~30 min. No photo, or scanning comes up empty? Just
+              add classes manually further down.
             </p>
             {schedulePhoto ? (
               <div className="schedule-photo-block">
