@@ -18,6 +18,12 @@ Everyone's weekly class schedule in one calendar, color-coded by name — spot w
 
 ## Getting started
 
+1. Create a [Supabase](https://supabase.com) project, then open its SQL editor and run
+   [`supabase/schema.sql`](supabase/schema.sql) once to create the `organizers` table.
+2. Copy `.env.local.example` to `.env.local` and fill in your project's URL and anon key
+   (Project Settings → API in the Supabase dashboard).
+3. Install and run:
+
 ```bash
 npm install
 npm run dev
@@ -49,10 +55,20 @@ glance — and typing the schedule in by hand is always available as a fallback.
 
 1. Push this project to a GitHub repository.
 2. Go to [vercel.com/new](https://vercel.com/new) and import the repo.
-3. Vercel auto-detects Next.js — no configuration needed. Click **Deploy**.
+3. Vercel auto-detects Next.js — no build configuration needed.
+4. Before deploying, add the same two environment variables from `.env.local.example`
+   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) under the project's
+   Environment Variables settings. Click **Deploy**.
 
 ## Notes
 
-- All schedule data (members, photos, classes) lives in the browser's `localStorage` — there is no server database. Data does not sync across devices/browsers.
-- Uploaded photos are automatically downscaled before saving to keep storage usage small.
-- To reset everything back to the original seed data, clear this site's local storage from your browser's dev tools (Application → Local Storage) or clear browsing data for the site.
+- Each Schedule Organizer board (members, events, visibility) lives in Supabase, keyed by
+  its URL slug — anyone with the link can view and edit it, no account needed, and it syncs
+  across every device that opens that link.
+- The homepage's list of organizers is just a local, per-browser bookmark list for
+  convenience (stored in `localStorage`); the actual board data always lives in Supabase.
+  Opening any board's link adds it to that list.
+- Because access is "anyone with the link," treat a board's URL like a shared document link
+  — don't put anything sensitive in one, and don't publish a board's link somewhere public
+  unless everyone should be able to edit it.
+- Uploaded photos are stored as compressed, downscaled data URLs inside the board's row.

@@ -30,20 +30,35 @@ export default function OrganizerPage() {
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    setOrganizer(getOrganizer(id));
-    const loaded = loadState(id);
-    setMembers(loaded.members);
-    setEvents(loaded.events);
-    setVisible(loaded.visible);
-    setReady(true);
+    let cancelled = false;
+    setReady(false);
+    setLoadError('');
+    (async () => {
+      try {
+        const [org, loaded] = await Promise.all([getOrganizer(id), loadState(id)]);
+        if (cancelled) return;
+        setOrganizer(org);
+        setMembers(loaded.members);
+        setEvents(loaded.events);
+        setVisible(loaded.visible);
+      } catch (err) {
+        if (!cancelled) setLoadError(err.message || 'Could not load this Schedule Organizer.');
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || loadError) return;
     saveState(id, { members, events, visible });
-  }, [ready, id, members, events, visible]);
+  }, [ready, loadError, id, members, events, visible]);
 
   function toggleVisible(memberId) {
     setVisible((v) => ({ ...v, [memberId]: !v[memberId] }));
@@ -64,13 +79,17 @@ export default function OrganizerPage() {
     setEditingMember(null);
   }
 
-  function handleRenameOrganizer() {
+  async function handleRenameOrganizer() {
     const next = window.prompt('Rename this Schedule Organizer', organizer?.name || '');
     if (next === null) return;
     const name = next.trim();
     if (!name) return;
-    renameOrganizer(id, name);
-    setOrganizer((o) => (o ? { ...o, name } : o));
+    try {
+      await renameOrganizer(id, name);
+      setOrganizer((o) => (o ? { ...o, name } : o));
+    } catch (err) {
+      window.alert(err.message || 'Could not rename this Schedule Organizer.');
+    }
   }
 
   function handleSaveMember(memberData, schedule) {
@@ -125,13 +144,15 @@ export default function OrganizerPage() {
     closeModal();
   }
 
-  if (ready && !organizer) {
+  if (ready && (loadError || !organizer)) {
     return (
       <div className="wrap">
         <header className="top">
           <div>
-            <h1>Organizer not found</h1>
-            <p className="sub">This Schedule Organizer doesn't exist in this browser, or was deleted.</p>
+            <h1>{loadError ? 'Could not load this board' : 'Organizer not found'}</h1>
+            <p className="sub">
+              {loadError || "This Schedule Organizer doesn't exist, or its link is wrong."}
+            </p>
           </div>
           <button type="button" className="btn primary" onClick={() => router.push('/')}>
             ← All Organizers

@@ -8,6 +8,7 @@ export default function HomePage() {
   const router = useRouter();
   const [organizers, setOrganizers] = useState([]);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     refresh();
@@ -19,18 +20,28 @@ export default function HomePage() {
     setReady(true);
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     const name = window.prompt('Name your Schedule Organizer (e.g. a section or team name)');
     if (name === null) return;
-    const organizer = createOrganizer(name);
-    router.push(`/o/${organizer.id}`);
+    setError('');
+    try {
+      const organizer = await createOrganizer(name);
+      router.push(`/o/${organizer.id}`);
+    } catch (err) {
+      setError(err.message || 'Could not create the Schedule Organizer.');
+    }
   }
 
-  function handleDelete(e, id) {
+  async function handleDelete(e, id) {
     e.stopPropagation();
-    if (!window.confirm('Delete this Schedule Organizer? This removes it only from this browser.')) return;
-    deleteOrganizer(id);
-    refresh();
+    if (!window.confirm('Delete this Schedule Organizer? Since boards are shared by link, this deletes it for everyone with the link.')) return;
+    setError('');
+    try {
+      await deleteOrganizer(id);
+      refresh();
+    } catch (err) {
+      setError(err.message || 'Could not delete the Schedule Organizer.');
+    }
   }
 
   return (
@@ -47,6 +58,8 @@ export default function HomePage() {
           + Create your own Schedule Organizer
         </button>
       </header>
+
+      {error && <p className="sub" style={{ color: 'var(--danger)' }}>{error}</p>}
 
       {ready && organizers.length === 0 && (
         <p className="sub">
