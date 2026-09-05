@@ -58,10 +58,9 @@ export default function HomePage() {
 
       {ready && organizers.length === 0 && (
         <div className="empty-state">
-          <p className="sub">No Schedule Organizers yet on this browser.</p>
-          <button type="button" className="btn primary" onClick={() => setCreateOpen(true)}>
-            + Create your first Schedule Organizer
-          </button>
+          <p className="sub">
+            No Schedule Organizers yet on this browser — use the button above to create your first one.
+          </p>
         </div>
       )}
 
