@@ -160,6 +160,59 @@ h1 {
   cursor: not-allowed;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crumb-back {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.crumb-back:hover {
+  color: var(--accent);
+}
+
+.org-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.org-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px var(--shadow);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.org-card:hover {
+  border-color: var(--accent);
+}
+.org-card h2 {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 0 0 3px;
+}
+.org-card .org-meta {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin: 0;
+}
+.btn.danger-hover:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -174,12 +227,21 @@ h1 {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 6px 12px 6px 8px;
+  padding: 5px 12px 5px 5px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   user-select: none;
   transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+.chip .avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 2px solid var(--chip-color, var(--border-strong));
+  background: var(--surface-2);
 }
 .chip .dot {
   width: 11px;
@@ -540,6 +602,30 @@ footer.note b {
   color: var(--text-faint);
   margin: -2px 0 2px;
   line-height: 1.5;
+}
+.photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.photo-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 2px solid var(--border-strong);
+  flex: 0 0 auto;
+}
+.photo-preview.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-faint);
 }
 .schedule-photo-block {
   display: flex;

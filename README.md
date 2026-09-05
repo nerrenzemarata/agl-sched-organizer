@@ -7,11 +7,12 @@ Everyone's weekly class schedule in one calendar, color-coded by name — spot w
 - Weekly calendar grid (Mon–Sun, 6 AM–10 PM) with overlapping-class layout
 - "Everyone's free at the same time" summary panel
 - Click a name to hide/show their classes
-- **Add member** button — enter a name, then upload a photo of their schedule (a class card,
-  a printed list, etc.) and it's **scanned for free, entirely on-device** (via
+- **Add member** button — enter a name, optionally add a profile photo (shown as their avatar
+  in the legend), then upload a photo of their schedule (a class card, a printed list, a grid
+  screenshot, etc.) and it's **scanned for free, entirely on-device** (via
   [tesseract.js](https://github.com/naptha/tesseract.js), no API key, no account, no cost)
-  to try to fill in the classes below. No photo, or the scan comes up empty? Add classes by
-  hand instead — that always works.
+  to try to fill in the classes below. No schedule photo, or the scan comes up empty? Add
+  classes by hand instead — that always works.
 - Edit or delete any member (pencil icon on their chip)
 - Data is saved to your browser's local storage, so it persists between visits
 

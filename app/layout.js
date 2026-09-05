@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: 'AGL Sched Organizer',
+  title: 'Action Group Schedule Organizer',
   description: "Everyone's weekly schedule in one calendar, color-coded by name.",
 };
 

@@ -24,6 +24,7 @@ function withKeys(rows) {
 export default function MemberModal({ open, member, members, events, onClose, onSave, onDelete, onViewPhoto }) {
   const isEdit = !!member;
   const [name, setName] = useState('');
+  const [photo, setPhoto] = useState(null);
   const [schedulePhoto, setSchedulePhoto] = useState(null);
   const [color, setColor] = useState(PALETTE[0]);
   const [exact, setExact] = useState(true);
@@ -35,11 +36,13 @@ export default function MemberModal({ open, member, members, events, onClose, on
   const [scanStage, setScanStage] = useState('');
   const [scanProgress, setScanProgress] = useState(0);
   const fileInputRef = useRef(null);
+  const profileInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     if (member) {
       setName(member.name);
+      setPhoto(member.photo || null);
       setSchedulePhoto(member.schedulePhoto || null);
       setColor(member.color);
       setExact(member.exact !== false);
@@ -51,6 +54,7 @@ export default function MemberModal({ open, member, members, events, onClose, on
       setSchedule(base);
     } else {
       setName('');
+      setPhoto(null);
       setSchedulePhoto(null);
       setColor(colorForIndex(members.length));
       setExact(true);
@@ -168,6 +172,17 @@ export default function MemberModal({ open, member, members, events, onClose, on
     }
   }
 
+  async function handleProfileFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readAndCompressImage(file, 480, 0.85);
+      setPhoto(dataUrl);
+    } catch (err) {
+      setError('Could not read that image file.');
+    }
+  }
+
   function addRow(day) {
     setSchedule((s) => ({
       ...s,
@@ -199,7 +214,7 @@ export default function MemberModal({ open, member, members, events, onClose, on
         .map((r) => ({ start: r.start, end: r.end, label: r.label.trim(), approx: !!r.approx }));
     });
     onSave(
-      { id: member?.id, name: trimmed, schedulePhoto, color, exact },
+      { id: member?.id, name: trimmed, photo, schedulePhoto, color, exact },
       cleanSchedule
     );
   }
@@ -228,6 +243,26 @@ export default function MemberModal({ open, member, members, events, onClose, on
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Maria Santos"
             />
+          </div>
+
+          <div className="field">
+            <label>Profile photo (optional)</label>
+            <div className="photo-row">
+              {photo ? (
+                <img className="photo-preview" src={photo} alt="Profile" />
+              ) : (
+                <div className="photo-preview placeholder">{(name.trim()[0] || '?').toUpperCase()}</div>
+              )}
+              <button type="button" className="btn small" onClick={() => profileInputRef.current?.click()}>
+                {photo ? 'Change photo' : 'Upload photo'}
+              </button>
+              {photo && (
+                <button type="button" className="btn small ghost" onClick={() => setPhoto(null)}>
+                  Remove
+                </button>
+              )}
+              <input ref={profileInputRef} type="file" accept="image/*" hidden onChange={handleProfileFile} />
+            </div>
           </div>
 
           <div className="field">
@@ -260,15 +295,6 @@ export default function MemberModal({ open, member, members, events, onClose, on
 
           <div className="field">
             <label>Schedule photo</label>
-            <p className="field-hint">
-              Upload a photo of their schedule and it's scanned for free, on-device (no account, no upload to
-              any server) to try to fill in the classes below. Handles both a typed schedule list and a
-              spreadsheet-style weekly grid (colored blocks per class) — for the grid style it reads the day
-              and time headers and figures out each class's time range from where its colored block starts and
-              ends. Either way, double-check the results — a label can come through blank ("Class") if the text
-              was hard to read; times can be off by up to ~30 min. No photo, or scanning comes up empty? Just
-              add classes manually further down.
-            </p>
             {schedulePhoto ? (
               <div className="schedule-photo-block">
                 <img
