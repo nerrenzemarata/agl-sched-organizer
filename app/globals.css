@@ -184,18 +184,39 @@ h1 {
 .org-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
   box-shadow: 0 1px 2px var(--shadow);
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
 }
 .org-card:hover {
   border-color: var(--accent);
+  box-shadow: 0 4px 14px var(--shadow);
+}
+.org-card:active {
+  transform: translateY(1px);
+}
+.org-card-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.org-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .org-card h2 {
   font-family: var(--font-fraunces), serif;
@@ -211,6 +232,34 @@ h1 {
 .btn.danger-hover:hover {
   color: var(--danger);
   border-color: var(--danger);
+}
+
+.btn-create {
+  padding: 11px 20px;
+  font-size: 14px;
+  gap: 8px;
+}
+.btn-create-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  padding: 28px 22px;
 }
 
 .legend {
@@ -542,6 +591,9 @@ footer.note b {
   max-height: 88vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.modal.modal-narrow {
+  max-width: 420px;
 }
 .modal-head {
   display: flex;

@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createOrganizer, deleteOrganizer, listOrganizers } from '@/lib/storage';
+import CreateOrganizerModal from '@/components/CreateOrganizerModal';
 
 export default function HomePage() {
   const router = useRouter();
   const [organizers, setOrganizers] = useState([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     refresh();
@@ -20,16 +22,9 @@ export default function HomePage() {
     setReady(true);
   }
 
-  async function handleCreate() {
-    const name = window.prompt('Name your Schedule Organizer (e.g. a section or team name)');
-    if (name === null) return;
-    setError('');
-    try {
-      const organizer = await createOrganizer(name);
-      router.push(`/o/${organizer.id}`);
-    } catch (err) {
-      setError(err.message || 'Could not create the Schedule Organizer.');
-    }
+  async function handleCreate(name) {
+    const organizer = await createOrganizer(name);
+    router.push(`/o/${organizer.id}`);
   }
 
   async function handleDelete(e, id) {
@@ -54,23 +49,27 @@ export default function HomePage() {
             separate from everyone else's.
           </p>
         </div>
-        <button type="button" className="btn primary" onClick={handleCreate}>
-          + Create your own Schedule Organizer
+        <button type="button" className="btn primary btn-create" onClick={() => setCreateOpen(true)}>
+          <span className="btn-create-icon">+</span> Create your own Schedule Organizer
         </button>
       </header>
 
       {error && <p className="sub" style={{ color: 'var(--danger)' }}>{error}</p>}
 
       {ready && organizers.length === 0 && (
-        <p className="sub">
-          No Schedule Organizers yet on this browser. Create one to start tracking a group's weekly schedule.
-        </p>
+        <div className="empty-state">
+          <p className="sub">No Schedule Organizers yet on this browser.</p>
+          <button type="button" className="btn primary" onClick={() => setCreateOpen(true)}>
+            + Create your first Schedule Organizer
+          </button>
+        </div>
       )}
 
       <div className="org-list">
         {organizers.map((o) => (
           <div key={o.id} className="org-card" onClick={() => router.push(`/o/${o.id}`)}>
-            <div>
+            <div className="org-card-icon">{(o.name.trim()[0] || '?').toUpperCase()}</div>
+            <div className="org-card-body">
               <h2>{o.name}</h2>
               <p className="org-meta">Created {new Date(o.createdAt).toLocaleDateString()}</p>
             </div>
@@ -85,6 +84,12 @@ export default function HomePage() {
           </div>
         ))}
       </div>
+
+      <CreateOrganizerModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }
