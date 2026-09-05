@@ -16,15 +16,26 @@ export default function HomePage() {
     refresh();
   }, []);
 
-  function refresh() {
-    const list = listOrganizers().slice().sort((a, b) => b.createdAt - a.createdAt);
-    setOrganizers(list);
-    setReady(true);
+  async function refresh() {
+    setError('');
+    try {
+      const list = await listOrganizers();
+      setOrganizers(list);
+    } catch (err) {
+      setError(err.message || 'Could not load Schedule Organizers.');
+    } finally {
+      setReady(true);
+    }
   }
 
   async function handleCreate(name) {
-    const organizer = await createOrganizer(name);
-    router.push(`/o/${organizer.id}`);
+    setError('');
+    try {
+      const organizer = await createOrganizer(name);
+      router.push(`/o/${organizer.id}`);
+    } catch (err) {
+      setError(err.message || 'Could not create the Schedule Organizer.');
+    }
   }
 
   async function handleDelete(e, id) {
@@ -45,8 +56,8 @@ export default function HomePage() {
         <div>
           <h1>Action Group Schedule Organizer</h1>
           <p className="sub">
-            Each Schedule Organizer is its own private board — create one for your group and it stays
-            separate from everyone else's.
+            Every Schedule Organizer below is shared with anyone who opens this site — no account needed.
+            Create one for your group, or open an existing one to view or edit it.
           </p>
         </div>
         <button type="button" className="btn primary btn-create" onClick={() => setCreateOpen(true)}>
@@ -59,7 +70,7 @@ export default function HomePage() {
       {ready && organizers.length === 0 && (
         <div className="empty-state">
           <p className="sub">
-            No Schedule Organizers yet on this browser — use the button above to create your first one.
+            No Schedule Organizers yet — use the button above to create the first one.
           </p>
         </div>
       )}
