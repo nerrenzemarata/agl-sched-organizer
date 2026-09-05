@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DAYS } from '@/lib/time';
 import { PALETTE, colorForIndex } from '@/lib/colors';
 import { readAndCompressImage } from '@/lib/storage';
+import { parseScheduleText } from '@/lib/scheduleParser';
 
 function emptySchedule() {
   const s = {};
@@ -64,19 +65,25 @@ export default function MemberModal({ open, member, members, events, onClose, on
     setScanError('');
     setScanNotice('');
     try {
-      const res = await fetch('/api/scan-schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl: photoDataUrl }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setScanError(data.error || 'Scan failed.');
-        return;
+      // Free, on-device text recognition (tesseract.js) — runs entirely in the
+      // browser, no API key, no server call, no cost. It reads text, not table
+      // layout, so it works best on plain typed/printed schedule lists and is
+      // much less reliable on photographed calendar-app grid screenshots.
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('eng');
+      let text = '';
+      try {
+        const result = await worker.recognize(photoDataUrl);
+        text = result?.data?.text || '';
+      } finally {
+        await worker.terminate();
       }
-      const found = Array.isArray(data.classes) ? data.classes : [];
+
+      const found = parseScheduleText(text);
       if (found.length === 0) {
-        setScanNotice('No classes were recognized in that photo — try a clearer photo, or add classes manually below.');
+        setScanNotice(
+          'Couldn’t confidently read any classes off that photo — this works best on a clear, typed schedule list. Add classes manually below instead, or try re-scanning a cropped/clearer photo.'
+        );
         return;
       }
       setSchedule((s) => {
@@ -90,10 +97,10 @@ export default function MemberModal({ open, member, members, events, onClose, on
         return next;
       });
       setScanNotice(
-        `Added ${found.length} class${found.length === 1 ? '' : 'es'} from the photo — review below and fix anything that looks off.`
+        `Best-effort read: added ${found.length} class${found.length === 1 ? '' : 'es'} from the photo — please check each one below, times and labels can come out wrong.`
       );
     } catch {
-      setScanError('Could not reach the scan service. Check your connection and try again.');
+      setScanError('Could not read that photo. Try again, or add classes manually below.');
     } finally {
       setScanning(false);
     }
@@ -206,9 +213,10 @@ export default function MemberModal({ open, member, members, events, onClose, on
           <div className="field">
             <label>Schedule photo</label>
             <p className="field-hint">
-              Upload a photo of their schedule — a class card, a Google Calendar screenshot, anything with the
-              times on it — and it's automatically scanned to fill in the classes below. No photo? Just skip
-              this and add classes manually further down.
+              Upload a photo of their schedule and it's scanned for free, on-device (no account, no upload to
+              any server) to try to fill in the classes below. Works best on a clear, typed schedule list —
+              screenshots of calendar-app grids are much harder to read automatically, so double-check the
+              results either way. No photo, or scanning comes up empty? Just add classes manually further down.
             </p>
             {schedulePhoto ? (
               <div className="schedule-photo-block">
@@ -238,7 +246,7 @@ export default function MemberModal({ open, member, members, events, onClose, on
                     Remove
                   </button>
                 </div>
-                {scanning && <p className="field-hint">Reading the photo with Claude…</p>}
+                {scanning && <p className="field-hint">Reading the photo on-device (free, no upload)…</p>}
                 {!scanning && scanNotice && <p className="field-hint scan-ok">{scanNotice}</p>}
                 {!scanning && scanError && <p className="field-hint scan-error">{scanError}</p>}
               </div>

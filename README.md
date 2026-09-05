@@ -8,8 +8,10 @@ Everyone's weekly class schedule in one calendar, color-coded by name — spot w
 - "Everyone's free at the same time" summary panel
 - Click a name to hide/show their classes
 - **Add member** button — enter a name, then upload a photo of their schedule (a class card,
-  a Google Calendar screenshot, etc.) and it's **automatically scanned and filled in** using
-  the Claude API. No photo? Add classes by hand instead — see setup below.
+  a printed list, etc.) and it's **scanned for free, entirely on-device** (via
+  [tesseract.js](https://github.com/naptha/tesseract.js), no API key, no account, no cost)
+  to try to fill in the classes below. No photo, or the scan comes up empty? Add classes by
+  hand instead — that always works.
 - Edit or delete any member (pencil icon on their chip)
 - Data is saved to your browser's local storage, so it persists between visits
 
@@ -22,25 +24,14 @@ npm run dev
 
 Open http://localhost:3000.
 
-### Enabling automatic schedule scanning
+### About the schedule photo scan
 
-The "upload a photo → auto-fill the schedule" feature calls the **Anthropic API**, which is
-separate from a claude.ai / Claude Pro subscription and billed on its own (pay-as-you-go,
-by usage — see https://console.anthropic.com for pricing). Without a key configured, the
-app still works fine — you just add classes manually instead.
-
-To turn it on:
-
-1. Create an API key at https://console.anthropic.com (Settings → API Keys) and add a
-   payment method there.
-2. Copy `.env.local.example` to `.env.local` and paste your key in:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-3. Restart `npm run dev`.
-
-For the deployed site on Vercel, add the same `ANTHROPIC_API_KEY` under
-**Project Settings → Environment Variables**, then redeploy.
+Scanning runs fully in the browser with no server call, no API key, and no cost — but it
+reads *text*, not table layout. It works reasonably well on a clear, typed schedule list
+("Monday 9:00–10:30 AM Calculus"). It's much less reliable on a photographed screenshot of
+a calendar app's grid view, where the visual layout carries information OCR can't see.
+Always review the rows it produces (they're marked "approx" on purpose) — or just skip the
+photo and type the schedule in by hand, which is always available as a fallback.
 
 ## Deploying to Vercel
 
