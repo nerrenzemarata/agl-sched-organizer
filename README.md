@@ -26,12 +26,16 @@ Open http://localhost:3000.
 
 ### About the schedule photo scan
 
-Scanning runs fully in the browser with no server call, no API key, and no cost — but it
-reads *text*, not table layout. It works reasonably well on a clear, typed schedule list
-("Monday 9:00–10:30 AM Calculus"). It's much less reliable on a photographed screenshot of
-a calendar app's grid view, where the visual layout carries information OCR can't see.
-Always review the rows it produces (they're marked "approx" on purpose) — or just skip the
-photo and type the schedule in by hand, which is always available as a fallback.
+Scanning runs fully in the browser with no server call, no API key, and no cost. To get the
+most out of free OCR, each photo is: cleaned up (upscaled, grayscaled, contrast-boosted),
+read twice with different layout assumptions (a plain list vs. a scattered/table layout),
+and merged, with day names matched fuzzily to shrug off small OCR typos.
+
+Even so, it reads *text*, not table layout — it works well on a clear, typed schedule list
+("Monday 9:00–10:30 AM Calculus"), and less reliably on a photographed screenshot of a
+calendar app's grid view, where the layout itself carries information OCR can't see. Every
+row it produces is marked "approx" on purpose — always give them a glance — and typing the
+schedule in by hand is always available as a fallback.
 
 ## Deploying to Vercel
 

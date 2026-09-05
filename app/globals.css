@@ -567,6 +567,24 @@ footer.note b {
 .field-hint.scan-error {
   color: var(--danger);
 }
+.scan-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.scan-progress-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--busy-track);
+  overflow: hidden;
+}
+.scan-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
 
 .color-row {
   display: flex;

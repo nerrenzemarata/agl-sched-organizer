@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { DAYS } from '@/lib/time';
 import { PALETTE, colorForIndex } from '@/lib/colors';
 import { readAndCompressImage } from '@/lib/storage';
-import { parseScheduleText } from '@/lib/scheduleParser';
+import { mergeScheduleReadings } from '@/lib/scheduleParser';
+import { preprocessForOCR } from '@/lib/imagePreprocess';
 
 function emptySchedule() {
   const s = {};
@@ -30,6 +31,8 @@ export default function MemberModal({ open, member, members, events, onClose, on
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
   const [scanNotice, setScanNotice] = useState('');
+  const [scanStage, setScanStage] = useState('');
+  const [scanProgress, setScanProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -64,25 +67,50 @@ export default function MemberModal({ open, member, members, events, onClose, on
     setScanning(true);
     setScanError('');
     setScanNotice('');
+    setScanProgress(0);
+    setScanStage('Enhancing photo…');
     try {
-      // Free, on-device text recognition (tesseract.js) — runs entirely in the
-      // browser, no API key, no server call, no cost. It reads text, not table
-      // layout, so it works best on plain typed/printed schedule lists and is
-      // much less reliable on photographed calendar-app grid screenshots.
-      const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker('eng');
-      let text = '';
+      // Free, on-device analysis — runs entirely in the browser (tesseract.js),
+      // no API key, no server call, no cost. To squeeze more accuracy out of it
+      // for free, we: 1) clean up the photo (upscale, grayscale, boost contrast),
+      // 2) read it twice with different layout assumptions and merge whatever
+      // each pass finds, and 3) tolerate small OCR typos when matching day names.
+      const cleanedPhoto = await preprocessForOCR(photoDataUrl);
+
+      const { createWorker, PSM } = await import('tesseract.js');
+      const passes = [
+        { mode: PSM.SINGLE_BLOCK, label: 'a clean list layout' },
+        { mode: PSM.SPARSE_TEXT, label: 'a scattered / table layout' },
+      ];
+
+      setScanStage('Loading recognition engine…');
+      const worker = await createWorker('eng', undefined, {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            setScanProgress(Math.round(m.progress * 100));
+          }
+        },
+      });
+
+      const texts = [];
       try {
-        const result = await worker.recognize(photoDataUrl);
-        text = result?.data?.text || '';
+        for (let i = 0; i < passes.length; i++) {
+          setScanStage(`Analyzing photo — pass ${i + 1} of ${passes.length} (${passes[i].label})…`);
+          setScanProgress(0);
+          await worker.setParameters({ tessedit_pageseg_mode: passes[i].mode });
+          const result = await worker.recognize(cleanedPhoto);
+          texts.push(result?.data?.text || '');
+        }
       } finally {
         await worker.terminate();
       }
 
-      const found = parseScheduleText(text);
+      setScanStage('Matching days & times…');
+      const found = mergeScheduleReadings(texts);
+
       if (found.length === 0) {
         setScanNotice(
-          'Couldn’t confidently read any classes off that photo — this works best on a clear, typed schedule list. Add classes manually below instead, or try re-scanning a cropped/clearer photo.'
+          'Ran two enhanced reading passes but couldn’t confidently match any classes to specific times. This works best on a clear, typed schedule list — a photographed calendar-app grid is much harder. Try cropping tightly to just the schedule, reducing glare, or add classes manually below.'
         );
         return;
       }
@@ -97,12 +125,14 @@ export default function MemberModal({ open, member, members, events, onClose, on
         return next;
       });
       setScanNotice(
-        `Best-effort read: added ${found.length} class${found.length === 1 ? '' : 'es'} from the photo — please check each one below, times and labels can come out wrong.`
+        `Analyzed the photo across 2 passes and found ${found.length} class${found.length === 1 ? '' : 'es'} — please double-check each one below, times and labels can still come out wrong.`
       );
     } catch {
       setScanError('Could not read that photo. Try again, or add classes manually below.');
     } finally {
       setScanning(false);
+      setScanStage('');
+      setScanProgress(0);
     }
   }
 
@@ -246,7 +276,14 @@ export default function MemberModal({ open, member, members, events, onClose, on
                     Remove
                   </button>
                 </div>
-                {scanning && <p className="field-hint">Reading the photo on-device (free, no upload)…</p>}
+                {scanning && (
+                  <div className="scan-progress">
+                    <p className="field-hint">{scanStage || 'Analyzing photo…'}</p>
+                    <div className="scan-progress-track">
+                      <div className="scan-progress-fill" style={{ width: `${scanProgress}%` }} />
+                    </div>
+                  </div>
+                )}
                 {!scanning && scanNotice && <p className="field-hint scan-ok">{scanNotice}</p>}
                 {!scanning && scanError && <p className="field-hint scan-error">{scanError}</p>}
               </div>
