@@ -7,21 +7,16 @@ export default function Legend({ members, visible, onToggle, onViewPhoto, onEdit
         <div
           key={m.id}
           className={'chip' + (visible[m.id] ? '' : ' off')}
-          style={{ '--chip-color': m.color }}
           onClick={() => onToggle(m.id)}
         >
-          {m.photo ? (
-            <img className="avatar" src={m.photo} alt={m.name} />
-          ) : (
-            <span className="dot" style={{ background: m.color }} />
-          )}
+          <span className="dot" style={{ background: m.color }} />
           <span>{m.name}</span>
           {m.exact ? null : <span className="tag">~approx</span>}
-          {m.photo && (
+          {m.schedulePhoto && (
             <button
               type="button"
               className="iconbtn"
-              title="View photo"
+              title="View original schedule photo"
               onClick={(e) => {
                 e.stopPropagation();
                 onViewPhoto(m);

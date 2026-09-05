@@ -18,21 +18,24 @@ function withKeys(rows) {
   return rows.map((r) => ({ ...r, _key: r._key ?? `r${rowKeySeq++}` }));
 }
 
-export default function MemberModal({ open, member, members, events, onClose, onSave, onDelete }) {
+export default function MemberModal({ open, member, members, events, onClose, onSave, onDelete, onViewPhoto }) {
   const isEdit = !!member;
   const [name, setName] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [schedulePhoto, setSchedulePhoto] = useState(null);
   const [color, setColor] = useState(PALETTE[0]);
   const [exact, setExact] = useState(true);
   const [schedule, setSchedule] = useState(emptySchedule());
   const [error, setError] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanNotice, setScanNotice] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     if (member) {
       setName(member.name);
-      setPhoto(member.photo || null);
+      setSchedulePhoto(member.schedulePhoto || null);
       setColor(member.color);
       setExact(member.exact !== false);
       const base = emptySchedule();
@@ -43,22 +46,68 @@ export default function MemberModal({ open, member, members, events, onClose, on
       setSchedule(base);
     } else {
       setName('');
-      setPhoto(null);
+      setSchedulePhoto(null);
       setColor(colorForIndex(members.length));
       setExact(true);
       setSchedule(emptySchedule());
     }
     setError('');
+    setScanError('');
+    setScanNotice('');
   }, [open, member]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;
+
+  async function scanPhoto(photoDataUrl) {
+    if (!photoDataUrl) return;
+    setScanning(true);
+    setScanError('');
+    setScanNotice('');
+    try {
+      const res = await fetch('/api/scan-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl: photoDataUrl }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setScanError(data.error || 'Scan failed.');
+        return;
+      }
+      const found = Array.isArray(data.classes) ? data.classes : [];
+      if (found.length === 0) {
+        setScanNotice('No classes were recognized in that photo — try a clearer photo, or add classes manually below.');
+        return;
+      }
+      setSchedule((s) => {
+        const next = { ...s };
+        found.forEach((c) => {
+          next[c.day] = [
+            ...next[c.day],
+            { start: c.start, end: c.end, label: c.label, approx: !!c.approx, _key: `r${rowKeySeq++}` },
+          ];
+        });
+        return next;
+      });
+      setScanNotice(
+        `Added ${found.length} class${found.length === 1 ? '' : 'es'} from the photo — review below and fix anything that looks off.`
+      );
+    } catch {
+      setScanError('Could not reach the scan service. Check your connection and try again.');
+    } finally {
+      setScanning(false);
+    }
+  }
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const dataUrl = await readAndCompressImage(file);
-      setPhoto(dataUrl);
+      // Higher resolution than a typical avatar — this is a reference document,
+      // so keep enough detail to read times/labels back off it later.
+      const dataUrl = await readAndCompressImage(file, 1100, 0.85);
+      setSchedulePhoto(dataUrl);
+      scanPhoto(dataUrl);
     } catch (err) {
       setError('Could not read that image file.');
     }
@@ -95,7 +144,7 @@ export default function MemberModal({ open, member, members, events, onClose, on
         .map((r) => ({ start: r.start, end: r.end, label: r.label.trim(), approx: !!r.approx }));
     });
     onSave(
-      { id: member?.id, name: trimmed, photo, color, exact },
+      { id: member?.id, name: trimmed, schedulePhoto, color, exact },
       cleanSchedule
     );
   }
@@ -127,32 +176,6 @@ export default function MemberModal({ open, member, members, events, onClose, on
           </div>
 
           <div className="field">
-            <label>Photo</label>
-            <div className="photo-row">
-              {photo ? (
-                <img className="photo-preview" src={photo} alt="Preview" />
-              ) : (
-                <div className="photo-preview placeholder">{(name.trim()[0] || '?').toUpperCase()}</div>
-              )}
-              <button type="button" className="btn small" onClick={() => fileInputRef.current?.click()}>
-                {photo ? 'Change photo' : 'Upload photo'}
-              </button>
-              {photo && (
-                <button type="button" className="btn small ghost" onClick={() => setPhoto(null)}>
-                  Remove
-                </button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleFile}
-              />
-            </div>
-          </div>
-
-          <div className="field">
             <label>Color</label>
             <div className="color-row">
               {PALETTE.map((c) => (
@@ -181,7 +204,54 @@ export default function MemberModal({ open, member, members, events, onClose, on
           </div>
 
           <div className="field">
-            <label>Weekly schedule</label>
+            <label>Schedule photo</label>
+            <p className="field-hint">
+              Upload a photo of their schedule — a class card, a Google Calendar screenshot, anything with the
+              times on it — and it's automatically scanned to fill in the classes below. No photo? Just skip
+              this and add classes manually further down.
+            </p>
+            {schedulePhoto ? (
+              <div className="schedule-photo-block">
+                <img
+                  className="schedule-photo-preview"
+                  src={schedulePhoto}
+                  alt="Schedule reference"
+                  onClick={() => onViewPhoto(schedulePhoto)}
+                  title="Click to view full size"
+                />
+                <div className="schedule-photo-actions">
+                  <button type="button" className="btn small" onClick={() => onViewPhoto(schedulePhoto)}>
+                    View full size
+                  </button>
+                  <button
+                    type="button"
+                    className="btn small primary"
+                    disabled={scanning}
+                    onClick={() => scanPhoto(schedulePhoto)}
+                  >
+                    {scanning ? 'Scanning…' : 'Re-scan photo'}
+                  </button>
+                  <button type="button" className="btn small" onClick={() => fileInputRef.current?.click()}>
+                    Replace
+                  </button>
+                  <button type="button" className="btn small ghost" onClick={() => setSchedulePhoto(null)}>
+                    Remove
+                  </button>
+                </div>
+                {scanning && <p className="field-hint">Reading the photo with Claude…</p>}
+                {!scanning && scanNotice && <p className="field-hint scan-ok">{scanNotice}</p>}
+                {!scanning && scanError && <p className="field-hint scan-error">{scanError}</p>}
+              </div>
+            ) : (
+              <button type="button" className="btn small" onClick={() => fileInputRef.current?.click()}>
+                Upload schedule photo
+              </button>
+            )}
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+          </div>
+
+          <div className="field">
+            <label>Weekly schedule {schedulePhoto ? '— review the scanned classes below' : '— add classes manually'}</label>
             <div className="sched-editor">
               {DAYS.map((day) => (
                 <details className="sched-day" key={day} open={schedule[day].length > 0}>

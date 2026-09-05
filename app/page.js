@@ -65,7 +65,13 @@ export default function Page() {
       setMembers((ms) =>
         ms.map((m) =>
           m.id === memberData.id
-            ? { ...m, name: memberData.name, photo: memberData.photo, color: memberData.color, exact: memberData.exact }
+            ? {
+                ...m,
+                name: memberData.name,
+                schedulePhoto: memberData.schedulePhoto,
+                color: memberData.color,
+                exact: memberData.exact,
+              }
             : m
         )
       );
@@ -74,7 +80,13 @@ export default function Page() {
       const id = uniqueId(memberData.name, members.map((m) => m.id));
       setMembers((ms) => [
         ...ms,
-        { id, name: memberData.name, photo: memberData.photo, color: memberData.color, exact: memberData.exact },
+        {
+          id,
+          name: memberData.name,
+          schedulePhoto: memberData.schedulePhoto,
+          color: memberData.color,
+          exact: memberData.exact,
+        },
       ]);
       setEvents((ev) => ({ ...ev, [id]: schedule }));
       setVisible((v) => ({ ...v, [id]: true }));
@@ -116,7 +128,7 @@ export default function Page() {
         members={members}
         visible={visible}
         onToggle={toggleVisible}
-        onViewPhoto={(m) => setLightboxSrc(m.photo)}
+        onViewPhoto={(m) => setLightboxSrc(m.schedulePhoto)}
         onEdit={openEditModal}
         onAddClick={openAddModal}
       />
@@ -127,7 +139,8 @@ export default function Page() {
 
       <footer className="note">
         Tap a name above to hide/show that person's classes on the calendar. Use the pencil icon to edit a
-        member's name, photo, or weekly schedule, or the camera icon to view their photo full-size.
+        member's name, color, or weekly schedule, or the camera icon to view the schedule photo they were
+        transcribed from.
       </footer>
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
@@ -140,6 +153,7 @@ export default function Page() {
         onClose={closeModal}
         onSave={handleSaveMember}
         onDelete={handleDeleteMember}
+        onViewPhoto={(src) => setLightboxSrc(src)}
       />
     </div>
   );
