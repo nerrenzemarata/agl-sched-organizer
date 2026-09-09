@@ -154,7 +154,7 @@ export default function OrganizerPage() {
               {loadError || "This Schedule Organizer doesn't exist, or its link is wrong."}
             </p>
           </div>
-          <button type="button" className="btn primary" onClick={() => router.push('/')}>
+          <button type="button" className="btn primary" onClick={() => router.push('/agl')}>
             ← All Organizers
           </button>
         </header>
@@ -167,7 +167,7 @@ export default function OrganizerPage() {
       <header className="top">
         <div>
           <p className="sub" style={{ marginBottom: 6 }}>
-            <a href="/" className="crumb-back">
+            <a href="/agl" className="crumb-back">
               ← All Organizers
             </a>
           </p>

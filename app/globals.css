@@ -176,6 +176,57 @@ h1 {
   color: var(--accent);
 }
 
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-decoration: none;
+  color: var(--text);
+  box-shadow: 0 1px 2px var(--shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.portal-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px var(--shadow);
+}
+.portal-card:active {
+  transform: translateY(1px);
+}
+.portal-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.portal-card h2 {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 20px;
+  margin: 0;
+}
+.portal-card p {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  margin: 0;
+}
+
 .org-list {
   display: flex;
   flex-direction: column;
@@ -741,6 +792,19 @@ footer.note b {
   border-color: var(--text);
 }
 
+.color-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 16px var(--shadow);
+  width: 176px;
+}
+
 .sched-editor {
   display: flex;
   flex-direction: column;
@@ -836,6 +900,229 @@ footer.note b {
 .modal-footer .right {
   display: flex;
   gap: 8px;
+}
+
+/* ---------- staff itinerary ---------- */
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+.field textarea {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  resize: vertical;
+}
+.field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cal-label {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 16px;
+  margin-left: 6px;
+}
+.cal-view-switch {
+  display: flex;
+  gap: 6px;
+}
+
+.monthshell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px var(--shadow);
+  overflow: hidden;
+}
+.month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--border-strong);
+}
+.month-weekday {
+  padding: 10px 8px;
+  text-align: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(96px, auto);
+}
+.month-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 6px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.month-cell:hover {
+  background: var(--surface-2);
+}
+.month-cell.dim {
+  color: var(--text-faint);
+  background: var(--surface-2);
+}
+.month-cell-num {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.month-cell.today .month-cell-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.month-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.month-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 10.5px;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.month-event-time {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 9.3px;
+  opacity: 0.92;
+  flex: 0 0 auto;
+}
+.month-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.month-more {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  padding: 0 5px;
+}
+
+.cell-head.is-today .dname {
+  color: var(--accent);
+}
+.dnum {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.dnum.today-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.allday-gutter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 7px;
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.allday-col {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  min-height: 30px;
+}
+.allday-col:last-child {
+  border-right: none;
+}
+.allday-chip {
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.day-allday {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.day-grid {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+}
+.day-draggable {
+  cursor: crosshair;
+  user-select: none;
+}
+.day-drag-select {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  border: 1.5px dashed var(--accent);
+  pointer-events: none;
+  font-size: 10.5px;
+  font-family: var(--font-plex-mono), monospace;
+  color: var(--accent);
+  padding: 2px 6px;
+  z-index: 5;
 }
 
 @media (max-width: 720px) {
